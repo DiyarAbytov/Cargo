@@ -1,0 +1,144 @@
+:root{
+  --primary:#C1116A; --primary-600:#A30E5B;
+  --text:#111317; --muted:#8f96a3; --border:#E7C0D2;
+  --surface:#fff; --bg:#fff; --danger:#dc2626; --success:#16a34a;
+
+  /* Шрифты */
+  --ff-body:"Roboto", system-ui, -apple-system, "Segoe UI", Arial, sans-serif; /* основной */
+  --ff-ui:Arial, "Helvetica Neue", Helvetica, sans-serif;                      /* кнопки/лейблы */
+}
+
+.register, .register *{ box-sizing:border-box; }
+
+/* Полотно */
+.register{
+  min-height:100dvh;
+  display:grid; place-items:center;
+  padding:24px 16px;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--ff-body);
+  font-size:16px; line-height:1.35;
+}
+
+/* Центровка контента без «карточки» */
+.register__card{
+  width:100%; max-width:420px;
+  padding:0 6px;
+  display:grid; gap:18px;
+  justify-items:center;
+}
+
+/* Крупный логотип по центру */
+.register__logo{ width:100%; display:grid; place-items:center; }
+.register__logo img{
+  max-height:104px;  /* как на макете */
+  max-width:80%;
+  display:block; object-fit:contain;
+}
+
+/* Сообщения сверху */
+.register__success{
+  background:#ecfdf5; border:1px solid #bbf7d0; color:var(--success);
+  padding:10px 12px; border-radius:10px; font-size:13px;
+}
+.register__error{ color:var(--danger); font-size:12px; }
+
+/* Форма */
+.register__form{ width:100%; display:grid; gap:12px; }
+.register__field{ display:grid; gap:6px; }
+.register__control{ position:relative; }
+
+/* Инпуты — тонкая розовая рамка и скругление 12 */
+.register__input{
+  width:100%; height:48px;
+  padding:0 44px 0 14px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--surface); outline:none;
+
+  font-family:var(--ff-body);
+  font-size:16px; color:var(--text);
+}
+.register__input::placeholder{ color:#b4b9c1; }
+.register__input:focus{ border-color:var(--primary); box-shadow:0 0 0 3px rgba(193,17,106,.12); }
+.register__input.is-invalid{ border-color:var(--danger)!important; box-shadow:0 0 0 3px rgba(220,38,38,.12); }
+
+/* Хинты под полями */
+.register__hint{
+  color:var(--muted);
+  font-size:12px;
+  margin-top:2px;
+}
+
+/* Иконки-глаза внутри поля */
+.register__toggle{
+  position:absolute; right:8px; top:50%; transform:translateY(-50%);
+  width:32px; height:32px; display:grid; place-items:center;
+  border:none; background:transparent; color:#9aa3ad; cursor:pointer;
+}
+.register__toggle:hover{ color:#6b7280; }
+
+/* Кнопка-пилюля */
+.register__btn{
+  width:100%; height:50px;
+  border:0; border-radius:999px;
+  background:var(--primary); color:#fff; cursor:pointer;
+
+  font-family:var(--ff-ui);
+  font-weight:700; letter-spacing:.2px;
+}
+.register__btn:active{ background:var(--primary-600); }
+.register__btn[disabled]{ cursor:not-allowed; }
+
+/* Низ формы */
+.register__footer{
+  text-align:center;
+  color:var(--muted);
+  font-size:14px;
+}
+.register__link{ color:var(--primary); text-decoration:none; }
+.register__link:hover{ text-decoration:underline; }
+
+/* ===== Combobox (ПВЗ) в стиле инпута ===== */
+.combo{ position:relative; width:100%; }
+.combo__control{
+  width:100%; height:48px;
+  display:grid; grid-template-columns:1fr 36px; align-items:center;
+  padding-left:14px; padding-right:6px;
+  border:1px solid var(--border); border-radius:12px;
+  background:var(--surface); cursor:pointer; appearance:none;
+  font-family:var(--ff-body); font-size:16px; color:var(--text);
+}
+.combo__control:focus-visible{ outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(193,17,106,.12); }
+.combo__control.is-invalid{ border-color:var(--danger)!important; box-shadow:0 0 0 3px rgba(220,38,38,.12); }
+.combo__value{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#b4b9c1; } /* плейсхолдерный вид */
+.combo__arrow{ display:grid; place-items:center; color:#9aa3ad; }
+
+.combo__menu{
+  position:absolute; z-index:30; left:0; right:0; top:calc(100% + 6px);
+  background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+  box-shadow:0 12px 24px rgba(0,0,0,.12); display:grid; overflow:hidden;
+}
+.combo__search{ border-bottom:1px solid #e5e7eb; padding:8px; }
+.combo__search-input{
+  width:100%; height:36px; border-radius:8px; border:1px solid #e5e7eb; padding:0 10px; outline:none;
+  font-family:var(--ff-body); font-size:14px;
+}
+.combo__search-input:focus{ border-color:var(--primary); box-shadow:0 0 0 3px rgba(193,17,106,.12); }
+
+.combo__list{ max-height:240px; overflow:auto; }
+.combo__option{ padding:10px 12px; display:grid; gap:4px; cursor:pointer; }
+.combo__option:hover{ background:#fafafa; }
+[aria-selected="true"].combo__option{ background:#f7f7f7; }
+.combo__option-name{ font-weight:600; font-size:13px; }
+.combo__option-meta{ color:var(--muted); font-size:12px; }
+.combo__empty{ padding:12px; color:var(--muted); font-size:13px; }
+
+/* Микроадаптив */
+@media (max-width:360px){
+  .register__logo img{ max-height:92px; }
+  .register__input{ height:46px; }
+  .combo__control{ height:46px; }
+  .register__btn{ height:48px; }
+}

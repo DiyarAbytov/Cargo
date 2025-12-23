@@ -1,0 +1,117 @@
+
+:root{
+  --primary:#C1116A; --primary-600:#A30E5B;
+  --text:#111317; --muted:#9ca3af; --border:#E7C0D2;
+  --surface:#fff; --bg:#fff; --danger:#dc2626; --success:#16a34a;
+
+  /* Шрифты */
+  --ff-body:"Roboto", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --ff-ui:Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+
+.login, .login * { box-sizing: border-box; }
+
+/* Полотно */
+.login{
+  min-height:100dvh;
+  display:grid; place-items:center;
+  padding:24px 16px;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--ff-body);
+  font-size:16px; line-height:1.35;
+}
+
+/* Карточка/центровка */
+.login__card{
+  width:100%; max-width:420px;
+  padding:0 8px;
+  display:grid; gap:20px;
+  justify-items:center;
+}
+
+/* Логотип как на макете — крупный и по центру */
+.login__logo{
+  width:100%;
+  display:grid; place-items:center;
+  margin-top:8px;
+}
+.login__logo img{
+  max-height:104px;           /* ~как на скрине */
+  max-width:80%;
+  display:block; object-fit:contain;
+}
+
+/* Форма */
+.login__form{
+  width:100%;
+  display:grid; gap:14px;
+}
+
+/* Поля с тонкой розовой рамкой и скруглением */
+.login__field{ display:grid; gap:6px; }
+.login__control{ position:relative; }
+
+.login__input{
+  width:100%; height:48px;
+  padding:0 44px 0 14px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--surface); outline:none;
+
+  font-family:var(--ff-body);
+  font-size:16px;
+  color:var(--text);
+}
+.login__input::placeholder{ color:#b4b9c1; } /* светло-серый как на скрине */
+.login__input:focus{
+  border-color:var(--primary);
+  box-shadow:0 0 0 3px rgba(193,17,106,.12);
+}
+
+/* Кнопка-иконка «глаз» внутри поля */
+.login__toggle{
+  position:absolute; right:8px; top:50%; transform:translateY(-50%);
+  width:32px; height:32px; display:grid; place-items:center;
+  border:none; background:transparent; color:#9aa3ad; cursor:pointer;
+}
+.login__toggle:hover{ color:#6b7280; }
+
+/* Кнопка-пилюля */
+.login__btn{
+  width:100%; height:50px;
+  border:0; border-radius:999px;
+  background:var(--primary); color:#fff; cursor:pointer;
+
+  font-family:var(--ff-ui);   /* Arial для кнопки */
+  font-weight:700; letter-spacing:.2px;
+}
+.login__btn:active{ background:var(--primary-600); }
+.login__btn:disabled{ opacity:.7; cursor:not-allowed; }
+
+/* Ссылки под кнопкой как на макете */
+.login__links{
+  display:grid; gap:10px;
+  justify-items:center;
+  margin-top:-4px;
+}
+.login__link{ color:var(--primary); text-decoration:none; }
+.login__link:hover{ text-decoration:underline; }
+.login__link--muted{ color:#8f96a3; }
+.login__muted{ color:#8f96a3; }
+.login__sep{ height:2px; }
+
+/* Сообщения */
+.login__success{
+  background:#ecfdf5; border:1px solid #bbf7d0; color:var(--success);
+  padding:10px 12px; border-radius:10px; font-size:13px; font-family:var(--ff-body);
+}
+.login__error{ color:var(--danger); font-size:12px; font-family:var(--ff-body); }
+.is-invalid{ border-color: var(--danger) !important; box-shadow: 0 0 0 3px rgba(220,38,38,.12); }
+
+/* Микроадаптив */
+@media (max-width:360px){
+  .login__logo img{ max-height:92px; }
+  .login__input{ height:46px; }
+  .login__btn{ height:48px; }
+}

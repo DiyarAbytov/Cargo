@@ -1,0 +1,146 @@
+:root{
+  --primary:#C1116A; --primary-600:#A30E5B;
+  --text:#111317; --muted:#8f96a3; --border:#E7C0D2;
+  --surface:#fff; --bg:#f5f6f8; --danger:#dc2626; --success:#16a34a;
+
+  --ff-body:"Roboto", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --ff-ui:Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+
+/* локальный box-sizing */
+.profile, .profile * { box-sizing: border-box; }
+
+/* Страница */
+.profile{
+  min-height:100dvh;
+  background:var(--bg);
+  padding-bottom:84px;
+  color:var(--text);
+  font-family:var(--ff-body);
+  font-size:16px; line-height:1.35;
+  overflow-x:clip;
+  -webkit-text-size-adjust:100%;
+
+  input, textarea, select, button { font-size:16px; }
+  @supports (-webkit-touch-callout: none) {
+    input, textarea, select, button { font-size:16px; }
+  }
+}
+
+/* Контент */
+.profile__card{ width:100%; max-width:420px; margin:0 auto; padding:16px; }
+
+/* Логотип */
+.profile__brand{ height:64px; display:block; margin:6px 0 12px 6px; object-fit:contain; }
+
+/* Форма */
+.profile__form{ display:grid; gap:12px; }
+
+/* Состояния/сообщения */
+.profile__loading{ text-align:center; color:var(--muted); }
+.profile__success{
+  background:#ecfdf5; border:1px solid #bbf7d0; color:var(--success);
+  padding:10px 12px; border-radius:10px; font-size:13px;
+}
+.profile__error{ color:var(--danger); font-size:12px; }
+.is-invalid{ border-color:#dc2626 !important; box-shadow:0 0 0 3px rgba(220,38,38,.12); }
+
+/* Поля */
+.profile__field{ display:grid; gap:6px; }
+.profile__label{ font-size:12px; color:var(--muted); }
+.profile__control{ position:relative; width:100%; }
+
+/* Инпуты */
+.profile__input{
+  width:100%; height:48px;
+  padding:0 44px 0 14px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--surface);
+  outline:none;
+  font-family:var(--ff-body);
+  color:var(--text);
+}
+.profile__input::placeholder{ color:#b4b9c1; }
+.profile__input:focus{ border-color:var(--primary); box-shadow:0 0 0 3px rgba(193,17,106,.12); }
+
+/* Readonly */
+.profile__input--ro{ padding-right:14px; background:var(--surface); color:var(--text); }
+
+/* Тогглер пароля */
+.profile__toggle{
+  position:absolute; right:8px; top:50%; transform:translateY(-50%);
+  width:32px; height:32px; display:grid; place-items:center;
+  border:none; background:transparent; color:#9aa3ad; cursor:pointer;
+}
+.profile__toggle:hover{ color:#6b7280; }
+
+/* Кнопки */
+.profile__btn{
+  width:100%; height:50px;
+  border:0; border-radius:999px;
+  background:var(--primary); color:#fff; cursor:pointer;
+  font-family:var(--ff-ui); font-weight:700; letter-spacing:.2px;
+}
+.profile__btn:active{ background:var(--primary-600); }
+.profile__btn[disabled]{ opacity:.7; cursor:not-allowed; }
+
+.profile__btn--danger{
+  background:#fff; color:var(--danger);
+  border:1px solid var(--danger);
+}
+.profile__btn--danger:active{ background:#fee2e2; }
+
+.profile__btn--ghost{
+  background:#fff; color:var(--primary);
+  border:1px solid var(--primary);
+}
+
+/* Подсказки/ссылки */
+.profile__hint{ font-size:12px; color:var(--muted); }
+.profile__link{ color:var(--primary); text-decoration:none; }
+.profile__link:hover{ text-decoration:underline; }
+
+/* ===== Combobox (BEM в блоке profile) ===== */
+.profile__combo{ position:relative; width:100%; }
+
+.profile__combo-control{
+  width:100%; height:48px;
+  display:grid; grid-template-columns:1fr 36px; align-items:center;
+  padding-left:14px; padding-right:6px;
+  border:1px solid var(--border); border-radius:12px;
+  background:var(--surface); cursor:pointer; appearance:none;
+}
+.profile__combo-control:focus-visible{
+  outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(193,17,106,.12);
+}
+.profile__combo-value{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.profile__combo-arrow{ display:grid; place-items:center; color:#9aa3ad; }
+
+.profile__combo-menu{
+  position:absolute; z-index:30; left:0; right:0; top:calc(100% + 6px);
+  background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+  box-shadow:0 12px 24px rgba(0,0,0,.12);
+  display:grid; overflow:hidden;
+}
+.profile__combo-search{ border-bottom:1px solid #e5e7eb; padding:8px; }
+.profile__combo-search-input{
+  width:100%; height:36px;
+  border-radius:8px; border:1px solid #e5e7eb; padding:0 10px; outline:none;
+}
+.profile__combo-search-input:focus{ border-color:var(--primary); box-shadow:0 0 0 3px rgba(193,17,106,.12); }
+
+.profile__combo-list{ max-height:240px; overflow:auto; }
+.profile__combo-option{ padding:10px 12px; display:grid; gap:4px; cursor:pointer; }
+.profile__combo-option:hover{ background:#fafafa; }
+[aria-selected="true"].profile__combo-option{ background:#f7f7f7; }
+.profile__combo-option-name{ font-weight:600; font-size:13px; }
+.profile__combo-option-meta{ color:var(--muted); font-size:12px; }
+.profile__combo-empty{ padding:12px; color:var(--muted); font-size:13px; }
+
+/* Микроадаптив */
+@media (max-width:320px){
+  .profile__brand{ height:48px; margin:4px 0 10px 4px; }
+  .profile__input, .profile__combo-control{ height:46px; }
+  .profile__btn{ height:48px; }
+}

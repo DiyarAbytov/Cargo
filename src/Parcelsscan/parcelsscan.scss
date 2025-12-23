@@ -1,0 +1,144 @@
+:root{
+  --primary:#C1116A; --primary-600:#A30E5B; --accent:#E63B57;
+  --text:#111317; --muted:#6b7280; --border:#e5e7eb;
+  --surface:#fff; --bg:#f5f6f8; --success:#16a34a; --danger:#dc2626;
+}
+
+/* базовый box-sizing локально для блока */
+.parcelsscan, .parcelsscan * { box-sizing: border-box; }
+
+/* страница */
+.parcelsscan{
+  min-height:100dvh;
+  display:grid;
+  grid-template-rows:auto;
+  background:var(--bg);
+  color:var(--text);
+  font-size:14px;
+  line-height:1.35;
+  padding-top:6px;
+  overflow-x: clip;            /* защита от горизонтального скролла */
+  -webkit-text-size-adjust:100%;
+
+  @supports (padding: max(0px)){
+    padding-top:max(env(safe-area-inset-top),6px);
+  }
+
+  /* КРИТИЧНО: антизум iOS — реальный 16px на контролах */
+  input, textarea, select, button { font-size:16px; }
+  @supports (-webkit-touch-callout: none) {
+    input, textarea, select, button { font-size:16px; }
+  }
+}
+
+/* контейнер */
+.parcelsscan__card{
+  width:100%;
+  max-width:420px;
+  padding:8px 16px 16px;
+  justify-self:center;
+  display:grid;
+  gap:18px;
+  align-content:start;
+}
+
+/* верхняя строка: логотип + выход */
+.parcelsscan__top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+/* логотип — ровно 66px */
+.parcelsscan__logo{
+  display:flex; align-items:center; justify-content:flex-start;
+  margin:0; line-height:0;
+
+  img{ height:66px; display:block; object-fit:contain; }
+}
+
+/* кнопка выхода */
+.parcelsscan__logout{
+  height:36px;
+  padding:0 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:#fff;
+  color:var(--danger);
+  font-weight:700;
+  cursor:pointer;
+}
+.parcelsscan__logout:active{ opacity:.9; }
+
+/* карточка формы */
+.parcelsscan__block{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 12px;
+  display:grid; gap:12px;
+}
+.parcelsscan__block-title{ font-weight:700; font-size:14px; }
+
+/* поля */
+.parcelsscan__inputs{ display:grid; gap:8px; }
+
+/* === ComboBox === */
+.parcelsscan__combo{ position:relative; }
+.parcelsscan__input{
+  width:100%; height:48px;
+  border-radius:12px; outline:none;
+  border:1px solid var(--border);
+  background:var(--surface);
+  padding:0 12px;
+  font-size:16px;              /* дубль защиты от зума */
+
+  &.is-invalid{ border-color: var(--danger); box-shadow:0 0 0 3px rgba(220,38,38,.12); }
+  &:focus{ border-color:var(--primary); box-shadow:0 0 0 3px rgba(193,17,106,.12); }
+}
+
+/* меню подсказок со скроллом */
+.parcelsscan__menu{
+  position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:20;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; box-shadow:0 12px 24px rgba(0,0,0,.12);
+}
+.parcelsscan__list{ max-height:220px; overflow:auto; }
+.parcelsscan__option{ padding:10px 12px; cursor:pointer; }
+.parcelsscan__option:hover{ background:#fafafa; }
+.parcelsscan__empty{ padding:12px; color:var(--muted); }
+
+/* кнопка добавления */
+.parcelsscan__btn{
+  width:100%; height:44px;
+  border:0; border-radius:10px;
+  background:var(--primary); color:#fff; font-weight:700; cursor:pointer;
+}
+.parcelsscan__btn:active{ background:var(--primary-600); }
+
+/* сообщения */
+.parcelsscan__hint{ color:var(--muted); font-size:12px; }
+.parcelsscan__success{
+  background:#ecfdf5; border:1px solid #bbf7d0; color:var(--success);
+  padding:10px 12px; border-radius:10px; font-size:13px;
+}
+.parcelsscan__error{ color:var(--danger); font-size:12px; }
+
+/* блок результата (created_event) */
+.parcelsscan__results{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; padding:12px; display:grid; gap:8px;
+}
+.parcelsscan__results-title{ font-weight:700; }
+.parcelsscan__bucket{ display:grid; gap:6px; }
+.parcelsscan__bucket-list{ display:flex; flex-wrap:wrap; gap:6px; }
+.parcelsscan__tag{
+  border:1px solid var(--border); border-radius:999px;
+  padding:4px 8px; font-size:12px; background:#fafafa;
+}
+
+/* адаптив */
+@media (max-width:360px){
+  .parcelsscan__input{ height:46px; }
+}

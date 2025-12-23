@@ -1,0 +1,89 @@
+/* Локальные переменные и шрифт только внутри .tabs */
+.tabs{
+  --primary:#C1116A;
+  --text:#111317;
+  --muted:#6b7280;
+  --tab-bg:#f7eaf2;
+  --tab-border:#e7c0d2;
+  --ff-ui:"Roboto", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+
+  position:fixed;
+  inset-inline:0;
+  bottom:0;
+  height:64px;
+  padding-bottom:env(safe-area-inset-bottom, 0);
+  background:var(--tab-bg);
+  border-top:1px solid var(--tab-border);
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  z-index:100;
+  -webkit-touch-callout:none;
+  -webkit-tap-highlight-color:transparent;
+
+  width:100%;         /* вместо 100vw — чтобы не было горизонтального скролла */
+  overflow:hidden;    /* режем субпиксельные артефакты */
+  font-family:var(--ff-ui);
+  line-height:1;
+  box-sizing:border-box; /* локально, без глобального * */
+}
+
+/* элемент таба */
+.tabs__item{
+  position:relative;
+  min-width:0;              /* не даём переполнить grid-ячейку */
+  display:grid;
+  place-items:center;
+  gap:4px;
+  text-decoration:none;
+  color:var(--muted);
+  user-select:none;
+  padding-inline:6px;       /* чуть больше тач-таргет */
+  outline:none;
+
+  &:focus-visible{
+    box-shadow:inset 0 0 0 2px rgba(193,17,106,.25);
+    border-radius:8px;
+  }
+
+  &.is-active{
+    color:var(--primary);
+    font-weight:600;
+  }
+}
+
+/* иконка */
+.tabs__icon{
+  width:22px;
+  height:22px;
+  object-fit:contain;
+  pointer-events:none;
+  display:block;
+}
+
+/* подпись */
+.tabs__text{
+  font-size:12px;
+  line-height:1;
+  white-space:nowrap;
+  max-width:100%;
+  text-overflow:ellipsis;
+  overflow:hidden;
+}
+
+/* активный индикатор */
+.tabs__indicator{
+  position:absolute;
+  top:-1px;
+  inset-inline:25%;
+  height:4px;
+  border-radius:4px 4px 0 0;
+  background:var(--primary);
+  pointer-events:none;
+}
+
+/* компакт на узких экранах */
+@media (max-width:360px){
+  .tabs{ height:60px; }
+  .tabs__icon{ width:20px; height:20px; }
+  .tabs__text{ font-size:11px; }
+}
