@@ -2,6 +2,10 @@ import React, { useMemo } from "react";
 import SiteShell from "./Layout/SiteShell.jsx";
 import "./Layout/SiteShell.scss";
 
+/* Header */
+import AppHeader from "./AppHeader/AppHeader.jsx";
+import "./AppHeader/AppHeader.scss";
+
 /* Pages */
 import Home from "./Home/Home.jsx";
 import "./Home/Home.scss";
@@ -28,13 +32,17 @@ import "./Auth/PasswordResetConfirm/PasswordResetConfirm.scss";
 import Tabs from "./Tabs/Tabs.jsx";
 import "./Tabs/Tabs.scss";
 
-/* Auth utils (твой Api.js) */
+/* Auth utils */
 import { isAuthed } from "./Api/Api";
 
 /* ===== helpers ===== */
 const USER_KEY = "lc_user";
 const getUser = () => {
-  try { return JSON.parse(localStorage.getItem(USER_KEY) || "null"); } catch { return null; }
+  try {
+    return JSON.parse(localStorage.getItem(USER_KEY) || "null");
+  } catch {
+    return null;
+  }
 };
 const isEmployee = () => Boolean(getUser()?.is_employee);
 
@@ -95,7 +103,7 @@ const App = () => {
   const tabsActive = useMemo(() => {
     if (path === "/") return "home";
     if (/^\/parcels\/?$/i.test(path)) return "parcels";
-    if (/^\/parcelsscan\/?$/i.test(path)) return "parcels"; // логично подсветить тот же раздел
+    if (/^\/parcelsscan\/?$/i.test(path)) return "parcels";
     if (/^\/profile\/?$/i.test(path)) return "profile";
     return null;
   }, [path]);
@@ -103,8 +111,12 @@ const App = () => {
   // табы скрываем у сотрудников на всех страницах
   const showTabs = !emp && Boolean(tabsActive);
 
+  // хедер показываем только на 3 табах (как на скрине)
+  const showHeader = !emp && Boolean(tabsActive);
+
   return (
     <SiteShell>
+      {showHeader && <AppHeader />}
       {page}
       {showTabs && <Tabs active={tabsActive} />}
     </SiteShell>

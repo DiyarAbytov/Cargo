@@ -1,0 +1,46 @@
+.appHeader,
+.appHeader * {
+  box-sizing: border-box;
+}
+
+.appHeader {
+  /* высота хедера: используем переменную, чтобы страницы могли делать padding-top */
+  --appHeaderH: 74px;
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--appHeaderH);
+  background: var(--surface);
+  z-index: 1200;
+
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+
+  @supports (padding: max(0px)) {
+    height: calc(var(--appHeaderH) + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+  }
+
+  &__inner {
+    height: var(--appHeaderH);
+    display: grid;
+    place-items: center;
+    padding: 10px 16px;
+  }
+
+  &__logo {
+    height: 40px;
+    width: auto;
+    display: block;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  @media (max-width: 420px) {
+    &__logo {
+      height: 36px;
+    }
+  }
+}

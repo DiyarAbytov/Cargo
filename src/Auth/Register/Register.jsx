@@ -1,542 +1,604 @@
-import React, { useMemo, useRef, useState, useEffect } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FiChevronDown, FiEye, FiEyeOff, FiLoader, FiCheckCircle } from "react-icons/fi";
 import api, { authStore } from "../../Api/Api";
-import logo from "../../logo/logo.png";
+import "./Register.scss";
 
 const REGISTER_URL = "auth/register/";
 const LOGIN_URL = "auth/login/";
 const PICKUP_POINTS_URL = "pickup-points/";
 
-/* ===== utils ===== */
+const USER_KEY = "lc_user";
+const KG_PREFIX = "+996";
+const KG_MAX_LEN = 13;
+const phoneKG = /^\+996\d{9}$/;
+
 const norm = (s) => String(s ?? "").trim();
-const collapseSpaces = (s) => norm(String(s).replace(/\s+/g, " "));
-const phoneKG = /^\+996\d{9}$/; // +996 и ровно 9 цифр
-const passMin = 8;
-const passMax = 128;
-const passHasLetter = /[A-Za-zА-Яа-яЁё]/;
-const passHasDigit = /\d/;
-const passNoSpaces = /^\S+$/;
+const lower = (s) => norm(s).toLowerCase();
 
-/* локальный переводчик общих ошибок */
-const translateDetailRu = (detail) => {
-  const d = String(detail || "").trim();
-  const low = d.toLowerCase();
-  if (!d) return "";
-
-  if (
-    low.includes("no active account found") ||
-    low.includes("invalid credentials") ||
-    low.includes("unable to log in")
-  )
-    return "Неверный телефон или пароль.";
-
-  if (low.includes("user not found") || low.includes("account not found"))
-    return "Пользователь не найден.";
-
-  if (low.includes("not active") || low.includes("inactive") || low.includes("disabled"))
-    return "Аккаунт не активирован. Обратитесь в поддержку.";
-
-  if (low.includes("throttle") || low.includes("too many") || low.includes("rate limit"))
-    return "Слишком много попыток. Попробуйте позднее.";
-
-  // частая англ. формулировка валидаторов Django
-  if (low.includes("password is too common") || low.includes("too common"))
-    return "Введённый пароль слишком широко распространён.";
-
-  if (/[А-Яа-яЁё]/.test(d)) return d;
-  return d || "Произошла ошибка.";
+const normalizeKgPhone = (value) => {
+  const raw = String(value ?? "");
+  const digits = raw.replace(/\D/g, "");
+  const tail = digits.startsWith("996") ? digits.slice(3) : digits;
+  const tail9 = tail.slice(0, 9);
+  return `${KG_PREFIX}${tail9}`;
 };
 
-const extractApiErrors = (err) => {
-  const data = err?.response?.data || err?.data || {};
-  const e = {};
+const hasLetter = (s) => /[A-Za-zА-Яа-яЁё]/.test(String(s ?? ""));
+const hasDigit = (s) => /\d/.test(String(s ?? ""));
+const hasSpace = (s) => /\s/.test(String(s ?? ""));
 
-  const common =
-    data?.detail ||
-    (Array.isArray(data?.non_field_errors) ? data.non_field_errors[0] : "");
+const pickFirstString = (...vals) => {
+  for (const v of vals) {
+    const s = norm(v);
+    if (s) return s;
+  }
+  return "";
+};
 
-  if (common) {
-    const msg = translateDetailRu(common);
+const buildAddress = (p) => {
+  const direct = pickFirstString(
+    p?.address,
+    p?.full_address,
+    p?.fullAddress,
+    p?.location,
+    p?.desc,
+    p?.description
+  );
+  if (direct) return direct;
 
-    // если это явно про пароль — показываем под полем password
-    if (/парол/i.test(msg) || /password/i.test(String(common))) e.password = msg;
-    else e._ = msg;
+  const street = pickFirstString(p?.street, p?.street_name, p?.streetName);
+  const house = pickFirstString(p?.house, p?.house_number, p?.houseNumber);
+  const note = pickFirstString(p?.note, p?.landmark);
+
+  let s = "";
+  if (street) s += street;
+  if (house) s += (s ? " " : "") + house;
+  if (note) s += (s ? " (" : "(") + note + ")";
+
+  return norm(s);
+};
+
+const fromAnyString = (v) => {
+  if (typeof v === "string") return v;
+  if (!v || typeof v !== "object") return "";
+
+  const preferred = ["name", "title", "label", "ru", "kg", "display", "text", "value"];
+  for (const k of preferred) {
+    if (typeof v?.[k] === "string" && norm(v[k])) return v[k];
+  }
+  for (const val of Object.values(v)) {
+    if (typeof val === "string" && norm(val)) return val;
+  }
+  return "";
+};
+
+const parseCityFromAddress = (addr) => {
+  const a = norm(addr);
+  if (!a) return "";
+
+  const bulletSplit = a
+    .split("•")
+    .map((x) => norm(x))
+    .filter(Boolean);
+
+  if (bulletSplit.length >= 2) {
+    const left = bulletSplit[0];
+    if (left && !/\d/.test(left) && left.length <= 40) return left;
   }
 
-  const take = (k) => {
-    if (data[k]) e[k] = Array.isArray(data[k]) ? data[k][0] : String(data[k]);
-  };
-
-  ["phone", "password", "full_name", "pickup_point_id", "new_password", "uid", "token", "tracking_number"].forEach(
-    take
-  );
-
-  if (!Object.keys(e).length && err?.message) e._ = translateDetailRu(err.message);
-  return e;
+  const dashCandidates = [" — ", " - ", " – "];
+  for (const d of dashCandidates) {
+    if (a.includes(d)) {
+      const left = norm(a.split(d)[0]);
+      if (left && !/\d/.test(left) && left.length <= 40) return left;
+    }
+  }
+  return "";
 };
 
-/* ===== icons ===== */
-const Eye = (p) => (
-  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
-    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" />
-    <circle cx="12" cy="12" r="3" />
-  </svg>
-);
-const EyeOff = (p) => (
-  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
-    <path d="M3 3l18 18M10.6 10.6a3 3 0 104.24 4.24M9.9 4.24A11.1 11.1 0 0123 12c0 1.63-4 7-11 7a12.4 12.4 0 01-4.2-.72M5.13 5.13A12 12 0 001 12c0 1.63 4 7 11 7" />
-  </svg>
-);
-const ChevronDown = (p) => (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
-    <path d="M6 9l6 6 6-6" />
-  </svg>
-);
+const isBadCity = (s) => {
+  const t = lower(s);
+  return !t || t === "пункт выдачи" || t === "пункт выдачи заказов";
+};
 
-/* ===== ComboPickup ===== */
-const ComboPickup = ({ value, onChange, error, disabled }) => {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [items, setItems] = useState([]);
-  const [nextUrl, setNextUrl] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [visible, setVisible] = useState(12);
-  const wrapRef = useRef(null);
+const findKnownCityDeep = (obj) => {
+  const wanted = ["Бишкек", "Ош"];
+  const seen = new Set();
+  const q = [obj];
+  let steps = 0;
 
-  useEffect(() => {
-    let alive = true;
+  while (q.length && steps < 250) {
+    const cur = q.shift();
+    steps += 1;
 
-    const fetchFirst = async () => {
-      setLoading(true);
-      try {
-        const { data } = await api.get(PICKUP_POINTS_URL, {
-          params: { search: norm(query) || undefined },
-        });
+    if (!cur) continue;
 
-        const list = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
-        if (alive) {
-          setItems(list);
-          setNextUrl(data?.next || null);
-          setVisible(12);
+    if (typeof cur === "string") {
+      const s = norm(cur);
+      if (s) {
+        for (const w of wanted) {
+          if (s.toLowerCase() === w.toLowerCase()) return w;
         }
-      } catch {
-        if (alive) {
-          setItems([]);
-          setNextUrl(null);
-        }
-      } finally {
-        if (alive) setLoading(false);
       }
-    };
+      continue;
+    }
 
-    fetchFirst();
-    return () => {
-      alive = false;
-    };
-  }, [query]);
+    if (typeof cur !== "object") continue;
+    if (seen.has(cur)) continue;
+    seen.add(cur);
+
+    for (const val of Object.values(cur)) {
+      if (typeof val === "string") {
+        const s = norm(val);
+        if (s) {
+          for (const w of wanted) {
+            if (s.toLowerCase() === w.toLowerCase()) return w;
+          }
+        }
+      } else if (val && typeof val === "object") {
+        q.push(val);
+      }
+    }
+  }
+
+  return "";
+};
+
+const extractCity = (p, address) => {
+  const candidates = [];
+
+  candidates.push(
+    fromAnyString(p?.city),
+    fromAnyString(p?.city_name),
+    fromAnyString(p?.cityName),
+    fromAnyString(p?.city_title),
+    fromAnyString(p?.cityTitle),
+    fromAnyString(p?.town),
+    fromAnyString(p?.settlement),
+    fromAnyString(p?.region_name),
+    fromAnyString(p?.region)
+  );
+
+  const obj = p && typeof p === "object" ? p : {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (String(k).toLowerCase().includes("city")) candidates.push(fromAnyString(v));
+  }
+
+  candidates.push(parseCityFromAddress(address));
+
+  const direct = candidates.map(norm).find((s) => s && !isBadCity(s));
+  if (direct) return direct;
+
+  const deep = findKnownCityDeep(p);
+  if (deep) return deep;
+
+  return "";
+};
+
+/* ===== Searchable Select (Single) ===== */
+const SearchableSelect = ({ value, options, placeholder, onChange, disabled = false }) => {
+  const rootRef = useRef(null);
+  const searchRef = useRef(null);
+
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+
+  const close = () => {
+    setOpen(false);
+    setQ("");
+  };
 
   useEffect(() => {
-    const onDoc = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    const onDown = (ev) => {
+      if (!rootRef.current) return;
+      if (rootRef.current.contains(ev.target)) return;
+      close();
     };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
-  const fetchNext = async () => {
-    if (!nextUrl || loading) return;
-    setLoading(true);
-    try {
-      const { data } = await api.get(nextUrl);
-      const list = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
-      setItems((prev) => [...prev, ...list]);
-      setNextUrl(data?.next || null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => {
+      try {
+        searchRef.current?.focus();
+      } catch (e) {
+        console.error(e);
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, [open]);
 
-  const onScroll = (e) => {
-    const el = e.currentTarget;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 6) {
-      if (visible < items.length) setVisible((v) => Math.min(v + 12, items.length));
-      else fetchNext();
-    }
-  };
-
-  const sel = useMemo(
-    () => items.find((r) => String(r?.id) === String(value)) || null,
-    [items, value]
-  );
-  const shown = useMemo(() => items.slice(0, visible), [items, visible]);
+  const filtered = useMemo(() => {
+    const query = lower(q);
+    if (!query) return options;
+    return options.filter(
+      (o) => lower(o.title).includes(query) || lower(o.subtitle).includes(query)
+    );
+  }, [options, q]);
 
   return (
-    <div className="combo" ref={wrapRef}>
+    <div className="registerSelect" ref={rootRef} onKeyDown={(ev) => ev.key === "Escape" && close()}>
       <button
         type="button"
-        className={`combo__control ${error ? "is-invalid" : ""}`}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={() => !disabled && setOpen((s) => !s)}
+        className={`registerSelect__btn ${open ? "is-open" : ""}`}
+        onClick={() => !disabled && setOpen((v) => !v)}
         disabled={disabled}
       >
-        <span className="combo__value">{sel ? sel.name_ru : "Пункт выдачи заказов"}</span>
-        <span className="combo__arrow" aria-hidden>
-          <ChevronDown />
+        <span className={`registerSelect__text ${value ? "" : "is-placeholder"}`}>
+          {value ? value.title : placeholder}
+        </span>
+        <span className="registerSelect__icon" aria-hidden="true">
+          <FiChevronDown className={open ? "is-open" : ""} />
         </span>
       </button>
 
       {open && (
-        <div className="combo__menu" role="dialog" aria-label="Выбор ПВЗ">
-          <div className="combo__search">
-            <input
-              className="combo__search-input"
-              placeholder="Поиск…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              autoFocus
-            />
-          </div>
+        <div className="registerSelect__drop">
+          <input
+            ref={searchRef}
+            className="registerSelect__search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Поиск..."
+            autoComplete="off"
+          />
 
-          <div className="combo__list" role="listbox" onScroll={onScroll}>
-            {loading && items.length === 0 && <div className="combo__empty">Загрузка…</div>}
-            {!loading && shown.length === 0 && <div className="combo__empty">Ничего не найдено</div>}
-
-            {shown.map((p) => (
-              <div
-                key={p.id}
-                role="option"
-                aria-selected={String(p.id) === String(value)}
-                className="combo__option"
-                onClick={() => {
-                  onChange(String(p.id));
-                  setOpen(false);
-                }}
-              >
-                <div className="combo__option-name">{p.name_ru}</div>
-                <div className="combo__option-meta">
-                  {p.code_label}
-                  {p.address ? ` • ${p.address}` : ""}
-                </div>
-              </div>
-            ))}
-
-            {loading && items.length > 0 && <div className="combo__empty">Ещё загружаем…</div>}
+          <div className="registerSelect__list">
+            {filtered.length === 0 ? (
+              <div className="registerSelect__empty">Ничего не найдено</div>
+            ) : (
+              filtered.map((opt, idx) => (
+                <button
+                  key={`${opt.value}-${idx}`}
+                  type="button"
+                  className={`registerSelect__item ${value?.value === opt.value ? "is-active" : ""}`}
+                  onClick={() => {
+                    onChange(opt);
+                    close();
+                  }}
+                >
+                  <div className="registerSelect__itemTitle">{opt.title}</div>
+                  {opt.subtitle ? <div className="registerSelect__itemSub">{opt.subtitle}</div> : null}
+                </button>
+              ))
+            )}
           </div>
         </div>
       )}
-
-      {error ? <div className="register__error">{error}</div> : null}
     </div>
   );
 };
 
-/* ===== Register ===== */
 const Register = () => {
   const [form, setForm] = useState({
-    full_name: "",
-    phone: "+996",
-    pickup_point_id: null,
+    fullName: "",
+    phone: KG_PREFIX,
     password: "",
-    confirm: "",
+    password2: "",
   });
 
   const [seePwd, setSeePwd] = useState(false);
   const [seePwd2, setSeePwd2] = useState(false);
+
+  const [points, setPoints] = useState([]);
+  const [pointLoading, setPointLoading] = useState(false);
+  const [pointValue, setPointValue] = useState(null);
+
   const [errors, setErrors] = useState({});
-  const [touched, setTouched] = useState({});
+  const [topError, setTopError] = useState("");
+
   const [submitting, setSubmitting] = useState(false);
+  const [ok, setOk] = useState(false);
+  const [phase, setPhase] = useState(""); // "register" | "login"
+  const [redirectTo, setRedirectTo] = useState("");
 
-  const setVal = (k, v) => setForm((s) => ({ ...s, [k]: v }));
-  const setTouch = (k) => setTouched((t) => ({ ...t, [k]: true }));
+  useEffect(() => {
+    setForm((s) => {
+      const next = normalizeKgPhone(s.phone);
+      return next === s.phone ? s : { ...s, phone: next };
+    });
+  }, []);
 
-  /* ФИО */
-  const validateName = (value) => {
-    const name = collapseSpaces(value);
-    if (!name) return "Укажите ФИО.";
-    if (name.length > 150) return "Максимум 150 символов.";
-    if (/\d/.test(name)) return "ФИО не должно содержать цифры.";
-    return null;
+  useEffect(() => {
+    let alive = true;
+
+    const load = async () => {
+      setPointLoading(true);
+      try {
+        const { data } = await api.get(PICKUP_POINTS_URL);
+        const list = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
+        if (alive) setPoints(list);
+      } catch (e) {
+        console.error(e);
+        if (alive) setPoints([]);
+      } finally {
+        if (alive) setPointLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const pointOptions = useMemo(() => {
+    const arr = Array.isArray(points) ? points : [];
+
+    return arr
+      .map((p) => {
+        const id = p?.id ?? p?.uuid ?? p?.pk ?? null;
+        if (id === null || id === undefined) return null;
+
+        const address = buildAddress(p);
+        const city = extractCity(p, address);
+        const safeCity = city || "Пункт выдачи";
+
+        const subtitle = address
+          ? safeCity && !lower(address).includes(lower(safeCity))
+            ? `${safeCity} • ${address}`
+            : address
+          : "";
+
+        return {
+          value: String(id),
+          title: safeCity,
+          subtitle,
+          raw: p,
+        };
+      })
+      .filter(Boolean);
+  }, [points]);
+
+  const setUserLocal = (u) => {
+    try {
+      localStorage.setItem(USER_KEY, JSON.stringify(u || null));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  /* Телефон */
-  const sanitizePhone = (v) => {
-    let s = String(v).replace(/[^\d+]/g, "");
-    if (!s.startsWith("+")) s = `+${s}`;
+  const setVal = (k, v) => {
+    setForm((s) => ({ ...s, [k]: k === "phone" ? normalizeKgPhone(v) : v }));
+  };
 
-    if (!s.startsWith("+996")) {
-      // аккуратно приводим к +996xxxxxxxxx
-      const digits = s.replace(/\D/g, "");
-      const tail = digits.replace(/^996/, "");
-      s = `+996${tail}`;
+  const validate = () => {
+    const e = {};
+
+    const fullName = norm(form.fullName);
+    const phone = norm(form.phone);
+    const pwd = String(form.password || "");
+    const pwd2 = String(form.password2 || "");
+
+    if (!fullName) e.fullName = "Укажите ФИО.";
+    if (!phone) e.phone = "Укажите телефон.";
+    else if (!phoneKG.test(phone)) e.phone = "Введите 9 цифр после +996.";
+
+    if (!pointValue) e.point = "Выберите пункт выдачи заказов.";
+
+    if (!pwd) e.password = "Укажите пароль.";
+    else {
+      if (pwd.length < 8) e.password = "Минимум 8 символов.";
+      else if (hasSpace(pwd)) e.password = "Без пробелов.";
+      else if (!hasLetter(pwd) || !hasDigit(pwd)) e.password = "Нужны буква и цифра.";
     }
 
-    if (s.length > 13) s = s.slice(0, 13);
-    if (s === "+") s = "+996";
-    return s;
-  };
-
-  const validatePhone = (value) => {
-    const phone = norm(value);
-    if (!phone) return "Укажите телефон.";
-    if (!phoneKG.test(phone)) return "Формат: +996XXXXXXXXX.";
-    return null;
-  };
-
-  /* Пароли */
-  const validatePassword = (value) => {
-    const p = String(value);
-    if (!p) return "Укажите пароль.";
-    if (p.length < passMin) return `Минимум ${passMin} символов.`;
-    if (p.length > passMax) return "Слишком длинный пароль.";
-    if (!passNoSpaces.test(p)) return "Пароль не должен содержать пробелы.";
-    if (!passHasLetter.test(p)) return "Нужна хотя бы одна буква.";
-    if (!passHasDigit.test(p)) return "Нужна хотя бы одна цифра.";
-    return null;
-  };
-
-  const validateConfirm = (confirm, password) =>
-    String(confirm) !== String(password) ? "Пароли не совпадают." : null;
-
-  /* ПВЗ */
-  const validatePickup = (id) => (id ? null : "Выберите ПВЗ.");
-
-  /* Общая валидация */
-  const validateAll = (f) => {
-    const e = {};
-    const nameErr = validateName(f.full_name);
-    if (nameErr) e.full_name = nameErr;
-
-    const phoneErr = validatePhone(f.phone);
-    if (phoneErr) e.phone = phoneErr;
-
-    const pvzErr = validatePickup(f.pickup_point_id);
-    if (pvzErr) e.pickup_point_id = pvzErr;
-
-    const passErr = validatePassword(f.password);
-    if (passErr) e.password = passErr;
-
-    const confErr = validateConfirm(f.confirm, f.password);
-    if (confErr) e.confirm = confErr;
+    if (!pwd2) e.password2 = "Подтвердите пароль.";
+    else if (pwd2 !== pwd) e.password2 = "Пароли не совпадают.";
 
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  /* live-валидация */
-  useEffect(() => {
-    const e = { ...errors };
+  const disabled = submitting || ok;
 
-    if (touched.full_name) e.full_name = validateName(form.full_name) || null;
-    if (touched.phone) e.phone = validatePhone(form.phone) || null;
-    if (touched.pickup_point_id) e.pickup_point_id = validatePickup(form.pickup_point_id) || null;
-    if (touched.password) e.password = validatePassword(form.password) || null;
-    if (touched.confirm) e.confirm = validateConfirm(form.confirm, form.password) || null;
-
-    Object.keys(e).forEach((k) => e[k] === null && delete e[k]);
-    setErrors(e);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form, touched]);
-
-  const canSubmit = useMemo(() => {
-    if (submitting) return false;
-
-    // жестко проверяем валидность, а не “просто заполнено”
-    if (validateName(form.full_name)) return false;
-    if (validatePhone(form.phone)) return false;
-    if (validatePickup(form.pickup_point_id)) return false;
-    if (validatePassword(form.password)) return false;
-    if (validateConfirm(form.confirm, form.password)) return false;
-
-    return true;
-  }, [submitting, form]);
-
-  /* авто-логин после регистрации */
   const tryAutoLogin = async (phone, password) => {
-    try {
-      const { data } = await api.post(LOGIN_URL, { phone, password });
-      const access = data?.access || data?.token || data?.access_token || "";
-      const refresh = data?.refresh || data?.refresh_token || "";
-      if (access) authStore.access = access;
-      if (refresh) authStore.refresh = refresh;
-      window.location.replace("/profile");
-      return true;
-    } catch (e) {
-      const ex = extractApiErrors(e);
-      setErrors({
-        _: ex._ || "Зарегистрировано, но не удалось автоматически войти. Попробуйте войти вручную.",
-      });
-      return false;
-    }
+    setPhase("login");
+    const { data } = await api.post(LOGIN_URL, { phone, password });
+
+    const access = data?.access || data?.token || data?.access_token || "";
+    const refresh = data?.refresh || data?.refresh_token || "";
+
+    authStore.access = access;
+    authStore.refresh = refresh;
+
+    const user = data?.user || null;
+    if (user) setUserLocal(user);
+
+    const nextPath = user?.is_employee ? "/parcelsscan" : "/";
+    setRedirectTo(nextPath);
+
+    setOk(true);
+    window.setTimeout(() => {
+      window.location.href = nextPath;
+    }, 700);
   };
 
   const submit = async (ev) => {
     ev.preventDefault();
+    if (submitting) return;
 
-    setTouched({
-      full_name: true,
-      phone: true,
-      pickup_point_id: true,
-      password: true,
-      confirm: true,
-    });
+    setTopError("");
+    setOk(false);
+    setPhase("");
+    setRedirectTo("");
+
+    if (!validate()) return;
 
     setSubmitting(true);
-
-    if (!validateAll(form)) {
-      setSubmitting(false);
-      return;
-    }
+    setPhase("register");
 
     try {
       const payload = {
-        full_name: collapseSpaces(form.full_name),
-        phone: norm(form.phone),
-        pickup_point_id: Number(form.pickup_point_id),
+        full_name: norm(form.fullName),
+        phone: normalizeKgPhone(form.phone),
+        pickup_point_id: Number(pointValue?.value),
         password: form.password,
       };
 
       await api.post(REGISTER_URL, payload);
+
+      // регистрация успешна — показываем успех и сразу логинимся
       await tryAutoLogin(payload.phone, payload.password);
-    } catch (resp) {
-      setErrors(extractApiErrors(resp));
+    } catch (err) {
+      const d = err?.response?.data || {};
+      const detail = d?.detail || d?.non_field_errors?.[0] || "Не удалось зарегистрироваться.";
+      setTopError(String(detail));
+
+      const e = {};
+      if (d.full_name) e.fullName = Array.isArray(d.full_name) ? d.full_name[0] : String(d.full_name);
+      if (d.phone) e.phone = Array.isArray(d.phone) ? d.phone[0] : String(d.phone);
+      if (d.pickup_point_id) e.point = Array.isArray(d.pickup_point_id) ? d.pickup_point_id[0] : String(d.pickup_point_id);
+      if (d.pickup_point) e.point = e.point || (Array.isArray(d.pickup_point) ? d.pickup_point[0] : String(d.pickup_point));
+      if (d.password) e.password = Array.isArray(d.password) ? d.password[0] : String(d.password);
+
+      setErrors((prev) => ({ ...prev, ...e }));
     } finally {
       setSubmitting(false);
+      setPhase("");
     }
   };
 
   return (
     <div className="register">
       <div className="register__card">
-        <div className="register__logo">
-          <img src={logo} alt="Lider Cargo" />
-        </div>
-
-        {errors._ && <div className="register__error">{errors._}</div>}
-
         <form className="register__form" onSubmit={submit} noValidate>
-          {/* ФИО */}
-          <div className="register__field">
-            <div className="register__control">
-              <input
-                className={`register__input ${errors.full_name ? "is-invalid" : ""}`}
-                type="text"
-                maxLength={150}
-                value={form.full_name}
-                onChange={(e) => setVal("full_name", e.target.value)}
-                onBlur={() => setTouch("full_name")}
-                autoComplete="name"
-                placeholder="ФИО"
-                aria-invalid={!!errors.full_name}
-                disabled={submitting}
-              />
+          {topError && <div className="register__alert">{topError}</div>}
+
+          {submitting && !ok && (
+            <div className="register__alert register__alert--info">
+              <FiLoader className="register__spin" />
+              <span>{phase === "login" ? "Входим…" : "Регистрируем…"}</span>
             </div>
-            {errors.full_name && <div className="register__error">{errors.full_name}</div>}
+          )}
+
+          {ok && (
+            <div className="register__alert register__alert--success">
+              <FiCheckCircle />
+              <span>
+                Успешно! Перенаправляем…
+              </span>
+            </div>
+          )}
+
+          <div className="register__field">
+            <input
+              className={`register__input ${errors.fullName ? "is-invalid" : ""}`}
+              type="text"
+              value={form.fullName}
+              onChange={(e) => setVal("fullName", e.target.value)}
+              placeholder="ФИО"
+              autoComplete="name"
+              disabled={disabled}
+            />
+            {errors.fullName && <div className="register__error">{errors.fullName}</div>}
           </div>
 
-          {/* Телефон */}
           <div className="register__field">
-            <div className="register__control">
-              <input
-                className={`register__input ${errors.phone ? "is-invalid" : ""}`}
-                type="tel"
-                inputMode="tel"
-                maxLength={13}
-                value={form.phone}
-                onChange={(e) => setVal("phone", sanitizePhone(e.target.value))}
-                onBlur={() => setTouch("phone")}
-                placeholder="Телефон"
-                autoComplete="tel"
-                aria-invalid={!!errors.phone}
-                disabled={submitting}
-              />
-            </div>
-            <div className="register__hint">Формат: +996XXXXXXXXX</div>
+            <input
+              className={`register__input ${form.phone === KG_PREFIX ? "is-muted" : ""} ${
+                errors.phone ? "is-invalid" : ""
+              }`}
+              type="tel"
+              inputMode="numeric"
+              maxLength={KG_MAX_LEN}
+              value={form.phone}
+              onChange={(e) => setVal("phone", e.target.value)}
+              placeholder={KG_PREFIX}
+              autoComplete="tel"
+              disabled={disabled}
+            />
             {errors.phone && <div className="register__error">{errors.phone}</div>}
           </div>
 
-          {/* ПВЗ */}
           <div className="register__field">
-            <ComboPickup
-              value={form.pickup_point_id}
-              onChange={(id) => {
-                setVal("pickup_point_id", id);
-                setTouch("pickup_point_id");
-              }}
-              error={errors.pickup_point_id}
-              disabled={submitting}
+            <SearchableSelect
+              value={pointValue}
+              options={pointOptions}
+              placeholder="Пункт выдачи заказов"
+              onChange={setPointValue}
+              disabled={pointLoading || disabled}
             />
+            {errors.point && <div className="register__error">{errors.point}</div>}
           </div>
 
-          {/* Пароль */}
           <div className="register__field">
             <div className="register__control">
               <input
-                className={`register__input ${errors.password ? "is-invalid" : ""}`}
+                className={`register__input register__input--withIcon ${errors.password ? "is-invalid" : ""}`}
                 type={seePwd ? "text" : "password"}
-                maxLength={passMax}
                 value={form.password}
                 onChange={(e) => setVal("password", e.target.value)}
-                onBlur={() => setTouch("password")}
-                autoComplete="new-password"
                 placeholder="Пароль"
-                aria-invalid={!!errors.password}
-                disabled={submitting}
+                autoComplete="new-password"
+                disabled={disabled}
               />
               <button
                 type="button"
                 className="register__toggle"
                 aria-label={seePwd ? "Скрыть пароль" : "Показать пароль"}
-                onClick={() => setSeePwd((s) => !s)}
-                disabled={submitting}
+                onClick={() => setSeePwd((v) => !v)}
+                disabled={disabled}
               >
-                {seePwd ? <EyeOff /> : <Eye />}
+                {seePwd ? <FiEyeOff /> : <FiEye />}
               </button>
             </div>
-            <div className="register__hint">
-              Минимум {passMin} символов, буква и цифра, без пробелов
-            </div>
+
+            <div className="register__hint">Минимум 8 символов, буква и цифра, без пробелов</div>
             {errors.password && <div className="register__error">{errors.password}</div>}
           </div>
 
-          {/* Подтверждение */}
           <div className="register__field">
             <div className="register__control">
               <input
-                className={`register__input ${errors.confirm ? "is-invalid" : ""}`}
+                className={`register__input register__input--withIcon ${errors.password2 ? "is-invalid" : ""}`}
                 type={seePwd2 ? "text" : "password"}
-                maxLength={passMax}
-                value={form.confirm}
-                onChange={(e) => setVal("confirm", e.target.value)}
-                onBlur={() => setTouch("confirm")}
-                autoComplete="new-password"
+                value={form.password2}
+                onChange={(e) => setVal("password2", e.target.value)}
                 placeholder="Подтверждение пароля"
-                aria-invalid={!!errors.confirm}
-                disabled={submitting}
+                autoComplete="new-password"
+                disabled={disabled}
               />
               <button
                 type="button"
                 className="register__toggle"
                 aria-label={seePwd2 ? "Скрыть пароль" : "Показать пароль"}
-                onClick={() => setSeePwd2((s) => !s)}
-                disabled={submitting}
+                onClick={() => setSeePwd2((v) => !v)}
+                disabled={disabled}
               >
-                {seePwd2 ? <EyeOff /> : <Eye />}
+                {seePwd2 ? <FiEyeOff /> : <FiEye />}
               </button>
             </div>
-            {errors.confirm && <div className="register__error">{errors.confirm}</div>}
+            {errors.password2 && <div className="register__error">{errors.password2}</div>}
           </div>
 
-          <button className="register__btn" type="submit" disabled={!canSubmit}>
-            {submitting ? "Отправка…" : "Зарегистрироваться"}
+          <button className={`register__btn ${ok ? "is-ok" : ""}`} type="submit" disabled={disabled}>
+            {ok ? (
+              <>
+                <FiCheckCircle />
+                <span>Успешно</span>
+              </>
+            ) : submitting ? (
+              <>
+                <FiLoader className="register__spin" />
+                <span>Обработка…</span>
+              </>
+            ) : (
+              "Зарегистрироваться"
+            )}
           </button>
-        </form>
 
-        <div className="register__footer">
-          Уже есть аккаунт?{" "}
-          <a href="/login" className="register__link">
-            Войти
-          </a>
-        </div>
+          {submitting && !ok && <div className="register__progress" aria-hidden="true" />}
+
+          <div className="register__bottom">
+            <span className="register__bottomText">Уже есть аккаунт? </span>
+            <a href="/login" className="register__bottomLink">
+              Войти
+            </a>
+          </div>
+        </form>
       </div>
     </div>
   );

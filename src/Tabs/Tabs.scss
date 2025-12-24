@@ -1,89 +1,95 @@
-/* Локальные переменные и шрифт только внутри .tabs */
-.tabs{
-  --primary:#C1116A;
-  --text:#111317;
-  --muted:#6b7280;
-  --tab-bg:#f7eaf2;
-  --tab-border:#e7c0d2;
-  --ff-ui:"Roboto", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+.tabs {
+  /* только локальные размеры — цвета берём из global :root */
+  --tabs-h: 86px;
+  --safe-bottom: env(safe-area-inset-bottom);
 
-  position:fixed;
-  inset-inline:0;
-  bottom:0;
-  height:64px;
-  padding-bottom:env(safe-area-inset-bottom, 0);
-  background:var(--tab-bg);
-  border-top:1px solid var(--tab-border);
-  display:grid;
-  grid-template-columns:repeat(3, 1fr);
-  z-index:100;
-  -webkit-touch-callout:none;
-  -webkit-tap-highlight-color:transparent;
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 100;
 
-  width:100%;         /* вместо 100vw — чтобы не было горизонтального скролла */
-  overflow:hidden;    /* режем субпиксельные артефакты */
-  font-family:var(--ff-ui);
-  line-height:1;
-  box-sizing:border-box; /* локально, без глобального * */
-}
+  width: 100%;
+  height: calc(var(--tabs-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
 
-/* элемент таба */
-.tabs__item{
-  position:relative;
-  min-width:0;              /* не даём переполнить grid-ячейку */
-  display:grid;
-  place-items:center;
-  gap:4px;
-  text-decoration:none;
-  color:var(--muted);
-  user-select:none;
-  padding-inline:6px;       /* чуть больше тач-таргет */
-  outline:none;
+  background: var(--surface);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
 
-  &:focus-visible{
-    box-shadow:inset 0 0 0 2px rgba(193,17,106,.25);
-    border-radius:8px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+
+  &__item {
+    position: relative;
+    min-width: 0;
+
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 8px;
+
+    padding: 16px 8px 14px;
+
+    text-decoration: none;
+    color: rgba(156, 163, 175, 1); /* как на фото (серый) */
+    user-select: none;
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: inset 0 0 0 2px rgba(193, 17, 106, 0.22);
+      border-radius: 12px;
+    }
+
+    &.is-active {
+      color: var(--primary);
+
+      /* нижняя линия как на фото: во всю ширину активной колонки */
+      &::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+
+        height: 4px;
+        background: var(--primary);
+        border-radius: 0;
+      }
+    }
   }
 
-  &.is-active{
-    color:var(--primary);
-    font-weight:600;
+  &__icon {
+    width: 26px;
+    height: 26px;
+    display: block;
+    pointer-events: none;
+  }
+
+  &__text {
+    font-size: 14px;
+    line-height: 1;
+    font-weight: 600;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 }
 
-/* иконка */
-.tabs__icon{
-  width:22px;
-  height:22px;
-  object-fit:contain;
-  pointer-events:none;
-  display:block;
-}
+@media (max-width: 380px) {
+  .tabs {
+    --tabs-h: 78px;
 
-/* подпись */
-.tabs__text{
-  font-size:12px;
-  line-height:1;
-  white-space:nowrap;
-  max-width:100%;
-  text-overflow:ellipsis;
-  overflow:hidden;
-}
+    &__icon {
+      width: 24px;
+      height: 24px;
+    }
 
-/* активный индикатор */
-.tabs__indicator{
-  position:absolute;
-  top:-1px;
-  inset-inline:25%;
-  height:4px;
-  border-radius:4px 4px 0 0;
-  background:var(--primary);
-  pointer-events:none;
-}
-
-/* компакт на узких экранах */
-@media (max-width:360px){
-  .tabs{ height:60px; }
-  .tabs__icon{ width:20px; height:20px; }
-  .tabs__text{ font-size:11px; }
+    &__text {
+      font-size: 13px;
+    }
+  }
 }
