@@ -421,14 +421,24 @@ const Modal = ({ open, title, loading, error, items, onClose }) => {
 };
 
 /* ===== Stage card (как на фото) ===== */
-const StageCard = ({ label, count, tone, onClick }) => (
-  <button type="button" className={`parcels__stage parcels__stage--${tone}`} onClick={onClick} aria-label={label}>
-    <div className="parcels__stageLabel">{label}</div>
-    <span className="parcels__badge" aria-hidden>
-      {count ?? 0}
-    </span>
-  </button>
-);
+const StageCard = ({ label, count, tone, onClick }) => {
+  // Добавляем условие для скрытия количества в карточке "Получен"
+  const hideCount = label === "Получен"; // если статус "Получен", скрываем количество
+
+  return (
+    <button
+      type="button"
+      className={`parcels__stage parcels__stage--${tone}`}
+      onClick={onClick}
+      aria-label={label}
+    >
+      <div className="parcels__stageLabel">{label}</div>
+      {/* Скрываем количество, если это "Получен" */}
+      {!hideCount && <span className="parcels__badge" aria-hidden>{count ?? 0}</span>}
+    </button>
+  );
+};
+
 
 /* ===== Main ===== */
 const Parcels = () => {
