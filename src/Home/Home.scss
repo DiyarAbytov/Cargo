@@ -5,11 +5,20 @@
 }
 
 .home {
-  min-height: 110dvh;
+  min-height: 120dvh;
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   -webkit-text-size-adjust: 100%;
+
+  /* ===== ВАЖНО: центр по ЭКРАНУ, не по SiteShell container ===== */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+
   overflow-x: clip;
+
+  /* отступ сверху под хедер */
+  padding-top: calc(74px + env(safe-area-inset-top) + 16px);
 
   &__container {
     width: min(720px, calc(100vw - 32px));
@@ -390,7 +399,7 @@
     border: 0;
   }
 
-  /* ===== Timeline (как было, оставил) ===== */
+  /* ===== Timeline ===== */
   .timeline {
     --rail: 28px;
     --line: 2px;
@@ -482,6 +491,7 @@
     }
   }
 
+  /* ===== Адаптация (десктоп НЕ трогаем, уменьшаем только на мобилке) ===== */
   @media (max-width: 520px) {
     &__kValue {
       font-size: 20px;
@@ -490,12 +500,23 @@
     &__card {
       padding: 20px 18px;
     }
+
+    &__input {
+      height: 46px;
+    }
+
+    &__btn {
+      height: 54px;
+    }
   }
 
-  padding-top: calc(74px + 16px);
-@supports (padding: max(0px)) {
-  padding-top: calc(74px + env(safe-area-inset-top) + 16px);
-}
+  @media (max-width: 360px) {
+    &__container {
+      width: min(720px, calc(100vw - 24px));
+    }
 
+    &__card {
+      padding: 18px 16px;
+    }
+  }
 }
-

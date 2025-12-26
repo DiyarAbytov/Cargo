@@ -12,7 +12,7 @@ const norm = (s) => String(s ?? "").trim();
 const clearSpaces = (s) => String(s ?? "").replace(/\s+/g, "");
 const sanitizeTrack = (s) => norm(clearSpaces(s));
 const TN_MIN = 1;
-const TN_MAX = 32;
+const TN_MAX = 20;
 
 /* === задержки синтетических событий (как в Parcels) === */
 const STORAGE_DELAY_MS = 10_000; // +10с после «поступил на склад»

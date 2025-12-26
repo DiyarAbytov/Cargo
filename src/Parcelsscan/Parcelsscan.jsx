@@ -9,7 +9,7 @@ const LOGOUT_URL = "auth/logout/";
 
 /* ==== limits ==== */
 const TN_MIN = 1;
-const TN_MAX = 32;
+const TN_MAX = 20;
 
 /* ==== utils ==== */
 const norm   = (s) => String(s ?? "").trim();

@@ -8,14 +8,24 @@
   display: grid;
   place-items: center;
 
+  /* ===== ВАЖНО: центр по ЭКРАНУ, а не по .site__container ===== */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+
+  /* чтобы 100vw не давал горизонтальный скролл из-за скроллбара */
+  overflow-x: clip;
+
+  /* твои отступы как были */
   padding: 24px 16px;
-  padding-bottom: calc(24px + 86px + env(safe-area-inset-bottom)); /* чтобы Tabs не перекрывал */
+  padding-top: calc(74px + env(safe-area-inset-top) + 16px);
+  padding-bottom: calc(24px + 86px + env(safe-area-inset-bottom));
 
   color: var(--text);
-
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   -webkit-text-size-adjust: 100%;
 
+  /* ===== Десктоп (НЕ ТРОГАЕМ РАЗМЕР) ===== */
   &__card {
     width: min(560px, calc(100vw - 32px));
     background: var(--surface);
@@ -23,6 +33,9 @@
     border: 1px solid rgba(15, 23, 42, 0.06);
     box-shadow: 0 18px 60px rgba(15, 23, 42, 0.10);
     padding: 22px 26px 24px;
+
+    /* железно центр */
+    margin: 0 auto;
   }
 
   &__loading {
@@ -176,6 +189,7 @@
     }
   }
 
+  /* ===== адаптация (только отступы/паддинги, размеры ПК не ломаем) ===== */
   @media (max-width: 560px) {
     &__card {
       padding: 20px 18px 20px;
@@ -191,11 +205,6 @@
       height: 54px;
     }
   }
-
-    padding-top: calc(74px + 16px);
-@supports (padding: max(0px)) {
-  padding-top: calc(74px + env(safe-area-inset-top) + 16px);
-}
 }
 
 /* ===== Searchable Select (Single) — в том же файле, BEM ===== */
@@ -259,8 +268,7 @@
 
   &__drop {
     position: absolute;
-    left: 0;
-    right: 0;
+    inset-inline: 0;
     top: calc(100% + 10px);
     z-index: 40;
 
@@ -340,6 +348,4 @@
     font-size: 13px;
     color: rgba(107, 114, 128, 0.95);
   }
-
-
 }

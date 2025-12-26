@@ -378,12 +378,7 @@ const Register = () => {
 
     if (!pointValue) e.point = "Выберите пункт выдачи заказов.";
 
-    if (!pwd) e.password = "Укажите пароль.";
-    else {
-      if (pwd.length < 8) e.password = "Минимум 8 символов.";
-      else if (hasSpace(pwd)) e.password = "Без пробелов.";
-      else if (!hasLetter(pwd) || !hasDigit(pwd)) e.password = "Нужны буква и цифра.";
-    }
+if (!pwd) e.password = "Укажите пароль.";
 
     if (!pwd2) e.password2 = "Подтвердите пароль.";
     else if (pwd2 !== pwd) e.password2 = "Пароли не совпадают.";
@@ -546,7 +541,7 @@ const Register = () => {
               </button>
             </div>
 
-            <div className="register__hint">Минимум 8 символов, буква и цифра, без пробелов</div>
+            <div className="register__hint">Введите пароль</div>
             {errors.password && <div className="register__error">{errors.password}</div>}
           </div>
 

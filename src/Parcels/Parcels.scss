@@ -1,5 +1,4 @@
 /* src/Pages/Parcels.scss */
-
 .parcels,
 .parcels * {
   box-sizing: border-box;
@@ -9,8 +8,18 @@
   min-height: 100dvh;
   color: var(--text);
   display: grid;
-  overflow-x: clip;
   -webkit-text-size-adjust: 100%;
+
+  /* ===== ВАЖНО: центрируем по ЭКРАНУ, а не по .site__container ===== */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+
+  /* чтобы 100vw не давал горизонтальный скролл */
+  overflow-x: clip;
+
+  /* safe-area + отступ как у тебя */
+  padding-top: calc(74px + env(safe-area-inset-top) + 16px);
 
   input,
   textarea,
@@ -43,6 +52,9 @@
     border-radius: 14px;
     box-shadow: 0 18px 60px rgba(15, 23, 42, 0.10);
     padding: 26px 28px 22px;
+
+    /* железно по центру */
+    margin: 0 auto;
   }
 
   &__title {
@@ -455,9 +467,4 @@
       grid-template-columns: 84px 1fr;
     }
   }
-
-  padding-top: calc(74px + 16px);
-@supports (padding: max(0px)) {
-  padding-top: calc(74px + env(safe-area-inset-top) + 16px);
-}
 }

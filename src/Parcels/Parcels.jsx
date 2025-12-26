@@ -18,7 +18,7 @@ const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const stripSpaces = (s) => String(s ?? "").replace(/\s+/g, ""); // API — без пробелов
 const sanitizeTN = (s) => norm(String(s ?? "")); // UI — как ввёл
 const TN_MIN = 1;
-const TN_MAX = 32;
+const TN_MAX = 20;
 const LS_TRACKS = "lc_tracks";
 
 /** ===== задержки синтетических событий ===== */

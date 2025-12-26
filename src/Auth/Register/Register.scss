@@ -1,10 +1,22 @@
+/* src/Pages/Auth/Register/Register.scss */
 .register {
   min-height: 100dvh;
   display: grid;
   place-items: center;
+
   padding: 24px 16px;
+  padding-bottom: calc(24px + 86px + env(safe-area-inset-bottom)); /* чтобы Tabs не перекрывал */
+  padding-top: calc(74px + env(safe-area-inset-top) + 16px); /* под хедер */
+
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  -webkit-text-size-adjust: 100%;
+
+  /* ===== ВАЖНО: центр по ЭКРАНУ, а не по SiteShell container ===== */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  overflow-x: clip;
 
   &,
   * {
@@ -44,6 +56,7 @@
     font-size: 16px;
     outline: none;
     box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+    transition: border-color 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
 
     &::placeholder {
       color: var(--muted);
@@ -53,9 +66,19 @@
       color: var(--muted);
     }
 
+    &:focus {
+      border-color: rgba(15, 23, 42, 0.18);
+      box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.06);
+    }
+
     &.is-invalid {
       border-color: rgba(220, 38, 38, 0.55);
-      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06), 0 0 0 3px rgba(220, 38, 38, 0.12);
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+    }
+
+    &:disabled {
+      opacity: 0.72;
+      cursor: not-allowed;
     }
 
     &--withIcon {
@@ -81,6 +104,15 @@
       width: 18px;
       height: 18px;
     }
+
+    &:hover {
+      color: rgba(15, 23, 42, 0.75);
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
   }
 
   &__hint {
@@ -102,13 +134,32 @@
     cursor: pointer;
     box-shadow: 0 18px 44px rgba(164, 47, 90, 0.22);
 
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    transition: transform 0.12s ease, opacity 0.15s ease;
+
     &:active {
+      transform: translateY(1px);
       background: var(--primary-btn-600, var(--primary-600));
     }
 
     &:disabled {
       opacity: 0.75;
       cursor: not-allowed;
+      transform: none;
+    }
+
+    &.is-ok {
+      background: var(--success);
+      box-shadow: 0 18px 44px rgba(22, 163, 74, 0.18);
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
     }
   }
 
@@ -128,6 +179,10 @@
     color: var(--primary);
     text-decoration: none;
     font-weight: 700;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   &__error {
@@ -136,6 +191,13 @@
   }
 
   &__alert {
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid #fecdd3;
+    background: #fff1f2;
+    color: var(--danger);
+    font-size: 13px;
+
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -161,24 +223,6 @@
 
   &__spin {
     animation: registerSpin 0.9s linear infinite;
-  }
-
-  &__redir {
-    color: rgba(15, 23, 42, 0.55);
-    font-size: 12px;
-    margin-left: 6px;
-  }
-
-  &__btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-
-    &.is-ok {
-      background: var(--success);
-      box-shadow: 0 18px 44px rgba(22, 163, 74, 0.18);
-    }
   }
 
   &__progress {
@@ -236,7 +280,7 @@
   }
 }
 
-/* ===== Searchable Select (Single) — внутри того же SCSS, без модулей ===== */
+/* ===== Searchable Select (Single) ===== */
 .registerSelect {
   position: relative;
   width: 100%;
@@ -249,10 +293,13 @@
     border: 1px solid rgba(15, 23, 42, 0.08);
     background: var(--surface);
     cursor: pointer;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
+
     box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
 
     &:disabled {
       opacity: 0.8;
@@ -268,6 +315,10 @@
   &__text {
     font-size: 16px;
     color: var(--text);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
     &.is-placeholder {
       color: var(--muted);
@@ -282,6 +333,11 @@
     svg {
       width: 18px;
       height: 18px;
+      transition: transform 0.15s ease;
+    }
+
+    svg.is-open {
+      transform: rotate(180deg);
     }
   }
 
@@ -290,12 +346,15 @@
     left: 0;
     right: 0;
     top: calc(100% + 10px);
+
     background: var(--surface);
     border-radius: 14px;
     border: 1px solid rgba(15, 23, 42, 0.08);
     box-shadow: 0 24px 70px rgba(15, 23, 42, 0.14);
+
     padding: 10px;
     z-index: 30;
+    overflow: hidden;
   }
 
   &__search {
@@ -307,6 +366,11 @@
     outline: none;
     font-size: 14px;
 
+    &:focus {
+      border-color: rgba(15, 23, 42, 0.18);
+      box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.06);
+    }
+
     &::placeholder {
       color: var(--muted);
     }
@@ -316,6 +380,7 @@
     margin-top: 10px;
     max-height: 220px;
     overflow: auto;
+
     display: grid;
     gap: 6px;
     padding-right: 2px;
@@ -329,7 +394,6 @@
     padding: 10px 10px;
     border-radius: 10px;
     cursor: pointer;
-    font-size: 14px;
     color: rgba(15, 23, 42, 0.86);
 
     &:hover {
@@ -339,8 +403,20 @@
     &.is-active {
       background: rgba(193, 17, 106, 0.10);
       color: rgba(15, 23, 42, 0.92);
-      font-weight: 600;
     }
+  }
+
+  &__itemTitle {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  &__itemSub {
+    margin-top: 3px;
+    font-size: 12px;
+    color: rgba(15, 23, 42, 0.58);
+    line-height: 1.25;
   }
 
   &__empty {

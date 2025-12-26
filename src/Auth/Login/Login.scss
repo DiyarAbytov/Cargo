@@ -1,10 +1,22 @@
+/* src/Pages/Auth/Login/Login.scss */
 .login {
   min-height: 87dvh;
   display: grid;
   place-items: center;
+
   padding: 24px 16px;
+  padding-bottom: calc(24px + 86px + env(safe-area-inset-bottom)); /* чтобы Tabs не перекрывал */
+  padding-top: calc(74px + env(safe-area-inset-top) + 16px); /* под хедер */
+
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  -webkit-text-size-adjust: 100%;
+
+  /* ===== ВАЖНО: центр по ЭКРАНУ, а не по SiteShell container ===== */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  overflow-x: clip;
 
   &,
   * {
@@ -44,7 +56,7 @@
     font-size: 16px;
     outline: none;
     box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
-    transition: border-color 0.15s ease, opacity 0.15s ease;
+    transition: border-color 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
 
     &::placeholder {
       color: var(--muted);
@@ -56,6 +68,12 @@
 
     &.is-invalid {
       border-color: rgba(220, 38, 38, 0.55);
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+    }
+
+    &:focus {
+      border-color: rgba(15, 23, 42, 0.18);
+      box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.06);
     }
 
     &:disabled {
@@ -85,6 +103,10 @@
     svg {
       width: 18px;
       height: 18px;
+    }
+
+    &:hover {
+      color: rgba(15, 23, 42, 0.75);
     }
 
     &:disabled {
@@ -141,12 +163,20 @@
     color: rgba(15, 23, 42, 0.75);
     text-decoration: none;
     font-size: 16px;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   &__register {
     color: var(--primary);
     text-decoration: none;
     font-size: 16px;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   &__alert {
@@ -233,6 +263,7 @@
     }
   }
 
+  /* ===== мобилка: только уменьшения, ПК не трогаем ===== */
   @media (max-width: 560px) {
     &__card {
       padding: 42px 28px 38px;
@@ -247,6 +278,11 @@
     &__input,
     &__btn {
       height: 52px;
+    }
+
+    &__forgot,
+    &__register {
+      font-size: 15px;
     }
   }
 }
